@@ -1,4 +1,4 @@
-import { FormEvent, ReactNode, useMemo, useState } from 'react';
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
 
 type ModuleId =
   | 'overview'
@@ -348,6 +348,7 @@ function MetricCard({ label, value, detail }: UsageMetric) {
 
 export function App() {
   const [activeModule, setActiveModule] = useState<ModuleId>('overview');
+  const [isNavigationOpen, setIsNavigationOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [users, setUsers] = useState(initialUsers);
   const [content, setContent] = useState(initialContent);
@@ -358,6 +359,35 @@ export function App() {
   const [healthUnlocked, setHealthUnlocked] = useState(false);
   const [notice, setNotice] = useState('Local mock mode: no Firebase, Convex, FCM, or real downloads are connected.');
   const activeModuleLabel = modules.find((module) => module.id === activeModule)?.label ?? 'Overview';
+
+  useEffect(() => {
+    if (!isNavigationOpen) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsNavigationOpen(false);
+    };
+
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', closeOnEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [isNavigationOpen]);
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return undefined;
+
+    const desktopQuery = window.matchMedia('(min-width: 881px)');
+    const closeDrawerOnDesktop = (event: MediaQueryListEvent) => {
+      if (event.matches) setIsNavigationOpen(false);
+    };
+
+    desktopQuery.addEventListener('change', closeDrawerOnDesktop);
+    return () => desktopQuery.removeEventListener('change', closeDrawerOnDesktop);
+  }, []);
 
   const filteredUsers = users.filter((user) =>
     matchesQuery(query, user.name, user.emailOrPhone, user.authProvider, user.status, user.consentStatus),
@@ -398,6 +428,11 @@ export function App() {
   function setUserStatus(userId: string, status: AdminUser['status']) {
     setUsers((current) => current.map((user) => (user.id === userId ? { ...user, status } : user)));
     setNotice(`User status changed to ${status} locally. Audit will be recorded after backend integration.`);
+  }
+
+  function selectModule(moduleId: ModuleId) {
+    setActiveModule(moduleId);
+    setIsNavigationOpen(false);
   }
 
   function toggleContentStatus(itemId: string) {
@@ -922,13 +957,33 @@ export function App() {
 
   return (
     <main className="app-shell">
-      <aside className="sidebar" aria-label="Admin navigation">
+      {isNavigationOpen ? (
+        <button
+          className="drawer-backdrop"
+          type="button"
+          aria-label="Dismiss navigation"
+          onClick={() => setIsNavigationOpen(false)}
+        />
+      ) : null}
+      <aside
+        className={`sidebar ${isNavigationOpen ? 'open' : ''}`}
+        id="admin-sidebar"
+        aria-label="Admin navigation"
+      >
         <div className="brand-lockup">
           <img src="/numnam-logo.png" alt="NumNam logo" />
           <div>
             <strong>NumNam</strong>
             <span>Super admin panel</span>
           </div>
+          <button
+            className="drawer-close"
+            type="button"
+            aria-label="Close navigation"
+            onClick={() => setIsNavigationOpen(false)}
+          >
+            <span aria-hidden="true">×</span>
+          </button>
         </div>
         <nav className="module-nav" aria-label="Dashboard modules">
           {moduleGroups.map((group) => (
@@ -942,7 +997,7 @@ export function App() {
                     className={module.id === activeModule ? 'active' : ''}
                     type="button"
                     aria-current={module.id === activeModule ? 'page' : undefined}
-                    onClick={() => setActiveModule(module.id)}
+                    onClick={() => selectModule(module.id)}
                   >
                     <span>{module.label}</span>
                     <small>{module.metric}</small>
@@ -961,9 +1016,21 @@ export function App() {
       </aside>
       <section className="workspace">
         <header className="topbar">
-          <div>
-            <p className="workspace-label">Workspace</p>
-            <strong>{activeModuleLabel}</strong>
+          <div className="topbar-context">
+            <button
+              className="menu-trigger"
+              type="button"
+              aria-label="Open navigation"
+              aria-expanded={isNavigationOpen}
+              aria-controls="admin-sidebar"
+              onClick={() => setIsNavigationOpen(true)}
+            >
+              <span aria-hidden="true">☰</span>
+            </button>
+            <div>
+              <p className="workspace-label">Workspace</p>
+              <strong>{activeModuleLabel}</strong>
+            </div>
           </div>
           <label className="global-search">
             <span className="visually-hidden">Global search</span>

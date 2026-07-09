@@ -33,6 +33,30 @@ describe('admin dashboard frontend', () => {
     expect(screen.getByRole('button', { name: /Push Notifications/i })).toHaveAttribute('aria-current', 'page');
   });
 
+  it('opens and dismisses the responsive navigation drawer accessibly', async () => {
+    render(<App />);
+    const user = userEvent.setup();
+    const trigger = screen.getByRole('button', { name: 'Open navigation' });
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(document.body.style.overflow).toBe('hidden');
+    expect(screen.getByRole('button', { name: 'Dismiss navigation' })).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(document.body.style.overflow).toBe('');
+
+    await user.click(trigger);
+    await user.click(screen.getByRole('button', { name: /Reports and Downloads/i }));
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('heading', { name: 'Reports and Downloads' })).toBeInTheDocument();
+
+    await user.click(trigger);
+    await user.click(screen.getByRole('button', { name: 'Dismiss navigation' }));
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
   it('shows overview metrics, usage, and operational alerts', () => {
     render(<App />);
 
