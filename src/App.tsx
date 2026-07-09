@@ -14,6 +14,13 @@ type ModuleId =
   | 'settings';
 
 type Status = 'active' | 'blocked' | 'disabled' | 'draft' | 'published' | 'queued' | 'sent' | 'failed' | 'hidden';
+type ModuleGroup =
+  | 'Dashboard'
+  | 'People & Activity'
+  | 'Content & Commerce'
+  | 'Engagement'
+  | 'Health & Governance'
+  | 'System';
 
 export type AdminUser = {
   id: string;
@@ -129,18 +136,27 @@ export type UsageMetric = {
   detail: string;
 };
 
-const modules: { id: ModuleId; label: string; metric: string }[] = [
-  { id: 'overview', label: 'Overview', metric: 'Command' },
-  { id: 'users', label: 'Users and Baby Profiles', metric: 'Accounts' },
-  { id: 'logs', label: 'Logs and Daily Activity', metric: 'Logs' },
-  { id: 'content', label: 'Content Management', metric: 'CMS' },
-  { id: 'shop', label: 'Shop', metric: 'MVP cart' },
-  { id: 'community', label: 'Community', metric: 'Moderation' },
-  { id: 'health', label: 'Nanha Yatra Health', metric: 'Guarded' },
-  { id: 'notifications', label: 'Push Notifications', metric: 'Transactional' },
-  { id: 'reports', label: 'Reports and Downloads', metric: 'Exports' },
-  { id: 'audit', label: 'Audit and Admin Activity', metric: 'Governance' },
-  { id: 'settings', label: 'Settings', metric: 'System' },
+const modules: { id: ModuleId; label: string; metric: string; group: ModuleGroup }[] = [
+  { id: 'overview', label: 'Overview', metric: 'Command', group: 'Dashboard' },
+  { id: 'users', label: 'Users and Baby Profiles', metric: 'Accounts', group: 'People & Activity' },
+  { id: 'logs', label: 'Logs and Daily Activity', metric: 'Logs', group: 'People & Activity' },
+  { id: 'content', label: 'Content Management', metric: 'CMS', group: 'Content & Commerce' },
+  { id: 'shop', label: 'Shop', metric: 'MVP cart', group: 'Content & Commerce' },
+  { id: 'community', label: 'Community', metric: 'Moderation', group: 'Engagement' },
+  { id: 'notifications', label: 'Push Notifications', metric: 'Transactional', group: 'Engagement' },
+  { id: 'health', label: 'Nanha Yatra Health', metric: 'Guarded', group: 'Health & Governance' },
+  { id: 'reports', label: 'Reports and Downloads', metric: 'Exports', group: 'Health & Governance' },
+  { id: 'audit', label: 'Audit and Admin Activity', metric: 'Governance', group: 'Health & Governance' },
+  { id: 'settings', label: 'Settings', metric: 'System', group: 'System' },
+];
+
+const moduleGroups: ModuleGroup[] = [
+  'Dashboard',
+  'People & Activity',
+  'Content & Commerce',
+  'Engagement',
+  'Health & Governance',
+  'System',
 ];
 
 const initialUsers: AdminUser[] = [
@@ -313,7 +329,6 @@ function ModuleHeader({ title, description }: { title: string; description: stri
   return (
     <div className="module-header">
       <div>
-        <p className="eyebrow">Super admin workspace</p>
         <h1>{title}</h1>
         <p>{description}</p>
       </div>
@@ -342,6 +357,7 @@ export function App() {
   const [healthReason, setHealthReason] = useState('');
   const [healthUnlocked, setHealthUnlocked] = useState(false);
   const [notice, setNotice] = useState('Local mock mode: no Firebase, Convex, FCM, or real downloads are connected.');
+  const activeModuleLabel = modules.find((module) => module.id === activeModule)?.label ?? 'Overview';
 
   const filteredUsers = users.filter((user) =>
     matchesQuery(query, user.name, user.emailOrPhone, user.authProvider, user.status, user.consentStatus),
@@ -908,34 +924,49 @@ export function App() {
     <main className="app-shell">
       <aside className="sidebar" aria-label="Admin navigation">
         <div className="brand-lockup">
-          <img src="/numnam-logo.png" alt="NumNam" />
+          <img src="/numnam-logo.png" alt="NumNam logo" />
           <div>
             <strong>NumNam</strong>
             <span>Super admin panel</span>
           </div>
         </div>
-        <nav className="module-nav">
-          {modules.map((module) => (
-            <button
-              key={module.id}
-              className={module.id === activeModule ? 'active' : ''}
-              type="button"
-              onClick={() => setActiveModule(module.id)}
-            >
-              <span>{module.label}</span>
-              <small>{module.metric}</small>
-            </button>
+        <nav className="module-nav" aria-label="Dashboard modules">
+          {moduleGroups.map((group) => (
+            <div className="nav-group" key={group}>
+              <p className="nav-group-label">{group}</p>
+              {modules
+                .filter((module) => module.group === group)
+                .map((module) => (
+                  <button
+                    key={module.id}
+                    className={module.id === activeModule ? 'active' : ''}
+                    type="button"
+                    aria-current={module.id === activeModule ? 'page' : undefined}
+                    onClick={() => setActiveModule(module.id)}
+                  >
+                    <span>{module.label}</span>
+                    <small>{module.metric}</small>
+                  </button>
+                ))}
+            </div>
           ))}
         </nav>
+        <div className="sidebar-footer">
+          <span className="admin-avatar" aria-hidden="true">SA</span>
+          <div>
+            <strong>Super admin</strong>
+            <span>Full local access</span>
+          </div>
+        </div>
       </aside>
       <section className="workspace">
         <header className="topbar">
           <div>
-            <p className="eyebrow">Frontend-only control room</p>
-            <strong>Super admin has full local mock controls. Sensitive health actions remain reason-gated.</strong>
+            <p className="workspace-label">Workspace</p>
+            <strong>{activeModuleLabel}</strong>
           </div>
           <label className="global-search">
-            <span>Global search</span>
+            <span className="visually-hidden">Global search</span>
             <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search users, logs, content, products..." />
           </label>
         </header>

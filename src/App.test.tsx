@@ -13,9 +13,24 @@ describe('admin dashboard frontend', () => {
   it('renders sidebar navigation for all major modules', () => {
     render(<App />);
 
+    expect(screen.getByRole('img', { name: 'NumNam logo' })).toHaveAttribute('src', '/numnam-logo.png');
+    expect(screen.getByRole('navigation', { name: 'Dashboard modules' })).toBeInTheDocument();
+    expect(screen.getByText('People & Activity')).toBeInTheDocument();
+    expect(screen.getByText('Content & Commerce')).toBeInTheDocument();
+    expect(screen.getByText('Health & Governance')).toBeInTheDocument();
+
     for (const module of modules) {
       expect(screen.getByRole('button', { name: new RegExp(module.label, 'i') })).toBeInTheDocument();
     }
+  });
+
+  it('updates the sticky workspace context when switching modules', async () => {
+    render(<App />);
+
+    await openModule(/Push Notifications/i);
+
+    expect(screen.getAllByText('Push Notifications').length).toBeGreaterThan(1);
+    expect(screen.getByRole('button', { name: /Push Notifications/i })).toHaveAttribute('aria-current', 'page');
   });
 
   it('shows overview metrics, usage, and operational alerts', () => {
