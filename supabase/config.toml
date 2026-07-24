@@ -1,0 +1,14 @@
+project_id = "dash-numnam"
+
+[api]
+enabled = true
+schemas = ["public", "graphql_public", "api"]
+extra_search_path = ["public", "extensions"]
+
+[db]
+major_version = 15
+
+[auth.third_party.firebase]
+enabled = true
+project_id = "env(FIREBASE_PROJECT_ID)"
+
